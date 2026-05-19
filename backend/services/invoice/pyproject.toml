@@ -1,0 +1,14 @@
+[project]
+name = "keel-invoice-service"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "keel-shared",
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.0",
+    "celery[redis]>=5.4.0",
+    "weasyprint>=61.0",
+]

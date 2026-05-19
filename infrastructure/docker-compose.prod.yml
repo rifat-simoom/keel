@@ -1,0 +1,34 @@
+# Production overrides — used with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+#
+# Differences from dev:
+#   - No exposed ports (services talk via internal Docker network)
+#   - Secrets via environment (injected by CI/CD or Kubernetes)
+#   - Keycloak runs in production mode (not start-dev)
+
+services:
+  postgres:
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports: []
+
+  keycloak:
+    command: start --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HOSTNAME: auth.keelapp.co.uk
+      KC_PROXY: edge
+    ports: []
+
+  minio:
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    ports: []

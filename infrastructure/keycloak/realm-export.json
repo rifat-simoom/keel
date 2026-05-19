@@ -1,0 +1,83 @@
+{
+  "realm": "keel",
+  "enabled": true,
+  "displayName": "Keel",
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "roles": {
+    "realm": [
+      { "name": "owner",      "description": "Full access — company owner/director" },
+      { "name": "accountant", "description": "Read + tax access" },
+      { "name": "employee",   "description": "Payroll view only" }
+    ]
+  },
+  "defaultRoles": ["owner"],
+  "clients": [
+    {
+      "clientId": "keel-web",
+      "name": "Keel Web App",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "https://keelapp.co.uk/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "https://keelapp.co.uk"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##https://keelapp.co.uk/*"
+      },
+      "defaultClientScopes": ["openid", "profile", "email", "roles"]
+    },
+    {
+      "clientId": "keel-mobile",
+      "name": "Keel Mobile App",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["com.keelapp://*"],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": ["openid", "profile", "email", "roles"]
+    },
+    {
+      "clientId": "keel-api",
+      "name": "Keel API Gateway",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "change-me-in-production",
+      "protocol": "openid-connect",
+      "defaultClientScopes": ["openid", "profile", "email", "roles"]
+    }
+  ],
+  "identityProviders": [],
+  "smtpServer": {}
+}

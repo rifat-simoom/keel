@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+.expo/
+out/
+*.tsbuildinfo
+.vite/
+.turbo/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code project memory
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker volumes
+postgres_data/
+redis_data/
+rabbitmq_data/
+minio_data/
+keycloak_data/
+
+# Mobile
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+android/app/build/
+ios/Pods/
+ios/build/
+
+# MinIO
+.minio.sys/
+
+# Secrets / keys (never commit)
+*.pem
+*.crt
+*.p8
+secrets/
+keycloak/realm-export-with-secrets.json
