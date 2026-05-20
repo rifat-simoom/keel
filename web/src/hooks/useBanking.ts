@@ -8,6 +8,9 @@ import { apiClient } from '@keel/api'
 import type {
   Account,
   AccountStats,
+  BankConnectionStatus,
+  ConnectUrlResponse,
+  SyncResult,
   Transaction,
   TransactionListResponse,
   VirtualCard,
@@ -121,6 +124,69 @@ export function useFreezeCard() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['banking', 'card'] })
+    },
+  })
+}
+
+// ── TrueLayer connect ─────────────────────────────────────────────────────────
+
+export function useBankConnection() {
+  return useQuery({
+    queryKey: ['banking', 'connection'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<BankConnectionStatus>('/api/v1/banking/connect/status')
+      return data
+    },
+    staleTime: 60_000,
+  })
+}
+
+export function useConnectBankUrl() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.get<ConnectUrlResponse>('/api/v1/banking/connect/url')
+      return data
+    },
+  })
+}
+
+export function useExchangeBankCode() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (code: string) => {
+      const { data } = await apiClient.post<BankConnectionStatus>(
+        '/api/v1/banking/connect/exchange',
+        { code },
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['banking'] })
+    },
+  })
+}
+
+export function useSyncBank() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<SyncResult>('/api/v1/banking/sync')
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['banking'] })
+    },
+  })
+}
+
+export function useDisconnectBank() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      await apiClient.delete('/api/v1/banking/connect')
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['banking'] })
     },
   })
 }

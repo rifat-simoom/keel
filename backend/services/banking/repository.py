@@ -1,14 +1,17 @@
+import logging
 import random
 import string
-from datetime import date, timedelta
+from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import func, select, and_
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from .models import Account, Transaction, VirtualCard
+from .models import Account, BankConnection, Transaction, VirtualCard
+
+logger = logging.getLogger(__name__)
 
 # ── Account helpers ───────────────────────────────────────────────────────────
 
@@ -32,6 +35,13 @@ async def get_company_id_for_user(db: AsyncSession, keycloak_id: UUID) -> UUID |
     )
     row = result.one_or_none()
     return UUID(str(row[0])) if row and row[0] else None
+
+
+async def get_or_create_account(db: AsyncSession, company_id: UUID) -> Account:
+    account = await get_account_by_company(db, company_id)
+    if not account:
+        account = await create_account(db, company_id)
+    return account
 
 
 async def create_account(db: AsyncSession, company_id: UUID) -> Account:
@@ -220,3 +230,157 @@ async def set_card_status(db: AsyncSession, card: VirtualCard, status: str) -> V
     card.status = status
     await db.flush()
     return card
+
+
+# ── TrueLayer connection ──────────────────────────────────────────────────────
+
+async def get_bank_connection(db: AsyncSession, company_id: UUID) -> BankConnection | None:
+    result = await db.execute(
+        select(BankConnection).where(
+            BankConnection.company_id == company_id,
+            BankConnection.status != "disconnected",
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def save_bank_connection(
+    db: AsyncSession,
+    company_id: UUID,
+    truelayer_account_id: str,
+    provider_id: str,
+    provider_name: str,
+    display_name: str,
+    access_token: str,
+    refresh_token: str,
+    token_expiry: datetime,
+) -> BankConnection:
+    existing = await db.execute(
+        select(BankConnection).where(BankConnection.company_id == company_id)
+    )
+    conn = existing.scalar_one_or_none()
+    if conn:
+        conn.truelayer_account_id = truelayer_account_id
+        conn.provider_id = provider_id
+        conn.provider_name = provider_name
+        conn.display_name = display_name
+        conn.access_token = access_token
+        conn.refresh_token = refresh_token
+        conn.token_expiry = token_expiry
+        conn.status = "active"
+    else:
+        conn = BankConnection(
+            company_id=company_id,
+            truelayer_account_id=truelayer_account_id,
+            provider_id=provider_id,
+            provider_name=provider_name,
+            display_name=display_name,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_expiry=token_expiry,
+            status="active",
+        )
+        db.add(conn)
+    await db.flush()
+    return conn
+
+
+async def disconnect_bank(db: AsyncSession, company_id: UUID) -> None:
+    conn = await get_bank_connection(db, company_id)
+    if conn:
+        conn.status = "disconnected"
+        conn.access_token = ""
+        conn.refresh_token = ""
+        await db.flush()
+
+
+async def ensure_fresh_token(db: AsyncSession, conn: BankConnection) -> str:
+    """Return a valid access token, refreshing if it expires within 5 minutes."""
+    from . import truelayer as tl
+    buffer = timedelta(minutes=5)
+    if conn.token_expiry.replace(tzinfo=timezone.utc) > datetime.now(timezone.utc) + buffer:
+        return conn.access_token
+    logger.info("TrueLayer token expiring soon, refreshing for company %s", conn.company_id)
+    tokens = await tl.refresh_access_token(conn.refresh_token)
+    conn.access_token = tokens["access_token"]
+    conn.refresh_token = tokens.get("refresh_token", conn.refresh_token)
+    conn.token_expiry = tokens["expiry"]
+    await db.flush()
+    return conn.access_token
+
+
+# ── TrueLayer sync ────────────────────────────────────────────────────────────
+
+async def sync_from_truelayer(
+    db: AsyncSession,
+    account: Account,
+    conn: BankConnection,
+) -> int:
+    """Pull latest data from TrueLayer into the local DB. Returns count of new transactions."""
+    from . import truelayer as tl
+
+    access_token = await ensure_fresh_token(db, conn)
+
+    # Fetch balance and update account
+    try:
+        balance_data = await tl.get_balance(access_token, conn.truelayer_account_id)
+        account.balance = Decimal(str(balance_data["current"]))
+    except Exception:
+        logger.warning("Failed to fetch balance from TrueLayer", exc_info=True)
+
+    # Fetch transactions — 90 days on first sync, 2 days since last sync otherwise
+    if conn.last_synced_at:
+        from_date = (conn.last_synced_at - timedelta(days=2)).date()
+    else:
+        from_date = date.today() - timedelta(days=90)
+    to_date = date.today()
+
+    try:
+        raw_txns = await tl.get_transactions(
+            access_token, conn.truelayer_account_id, from_date, to_date
+        )
+    except Exception:
+        logger.error("Failed to fetch transactions from TrueLayer", exc_info=True)
+        raw_txns = []
+
+    new_count = 0
+    for raw in raw_txns:
+        tl_id = raw.get("transaction_id")
+        if not tl_id:
+            continue
+
+        # Check if already imported
+        existing = await db.execute(
+            select(Transaction).where(Transaction.truelayer_transaction_id == tl_id)
+        )
+        if existing.scalar_one_or_none():
+            continue
+
+        amount = Decimal(str(raw.get("amount", 0)))
+        tl_category = raw.get("transaction_category", "UNKNOWN")
+        is_expense = amount < 0 and tl_category not in ("TRANSFER", "CREDIT")
+
+        # Parse timestamp — TrueLayer returns ISO 8601
+        ts = raw.get("timestamp", "")
+        try:
+            txn_date = datetime.fromisoformat(ts.replace("Z", "+00:00")).date()
+        except (ValueError, AttributeError):
+            txn_date = date.today()
+
+        txn = Transaction(
+            account_id=account.id,
+            amount=amount,
+            description=raw.get("description", ""),
+            category=tl.map_category(tl_category),
+            merchant_name=raw.get("merchant_name"),
+            transaction_date=txn_date,
+            is_expense=is_expense,
+            truelayer_transaction_id=tl_id,
+        )
+        db.add(txn)
+        new_count += 1
+
+    conn.last_synced_at = datetime.now(timezone.utc)
+    await db.flush()
+    logger.info("TrueLayer sync: %d new transactions for company %s", new_count, conn.company_id)
+    return new_count

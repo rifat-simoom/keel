@@ -69,6 +69,27 @@ export type TransactionCategory =
   | 'ENTERTAINMENT'
   | 'OTHER'
 
+// ── TrueLayer connection ──────────────────────────────────────────────────────
+
+export interface BankConnectionStatus {
+  connected: boolean
+  provider_name?: string
+  display_name?: string
+  last_synced_at?: string
+  status?: 'active' | 'expired' | 'disconnected'
+  new_transactions?: number
+}
+
+export interface ConnectUrlResponse {
+  url: string
+  state: string
+}
+
+export interface SyncResult {
+  new_transactions: number
+  synced_at?: string
+}
+
 export const CATEGORY_LABELS: Record<TransactionCategory, string> = {
   TRAVEL: 'Travel & Subsistence',
   VEHICLE: 'Motor Expenses',

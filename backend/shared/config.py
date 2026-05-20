@@ -21,5 +21,11 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     resend_api_key: str = ""
 
+    # TrueLayer Open Banking
+    truelayer_client_id: str = ""
+    truelayer_client_secret: str = ""
+    truelayer_redirect_uri: str = "http://localhost:5173/banking/callback"
+    truelayer_sandbox: bool = True
+
 
 settings = Settings()

@@ -19,6 +19,7 @@ import { TaxPage } from './pages/TaxPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
+import { BankingCallbackPage } from './pages/BankingCallbackPage'
 
 function App() {
   const initFromStorage = useAuthStore((s) => s.initFromStorage)
@@ -30,9 +31,10 @@ function App() {
   return (
     <Routes>
       {/* Public */}
-      <Route path="/login"      element={<LoginPage />} />
-      <Route path="/callback"   element={<CallbackPage />} />
-      <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route path="/login"             element={<LoginPage />} />
+      <Route path="/callback"          element={<CallbackPage />} />
+      <Route path="/onboarding"        element={<OnboardingPage />} />
+      <Route path="/banking/callback"  element={<BankingCallbackPage />} />
 
       {/* Protected — all wrapped in the sidebar shell */}
       <Route element={<ProtectedRoute />}>

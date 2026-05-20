@@ -5,9 +5,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine
-from .models import Account, Transaction, VirtualCard
+from .models import Account, BankConnection, Transaction, VirtualCard
 from shared.models.base import Base
 from .router import router
+from .connect import connect_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,6 +31,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(connect_router)
 
 
 @app.get("/health")

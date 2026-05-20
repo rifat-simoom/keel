@@ -1,10 +1,12 @@
-import { useState, useRef, useCallback } from 'react'
-import { Search, SlidersHorizontal, Plus, CreditCard } from 'lucide-react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Search, CreditCard } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { AccountHeader } from '../components/banking/AccountHeader'
 import { TransactionRow } from '../components/banking/TransactionRow'
 import { TransactionDetailSheet } from '../components/banking/TransactionDetailSheet'
 import { VirtualCardPanel } from '../components/banking/VirtualCardPanel'
+import { ConnectBankBanner } from '../components/banking/ConnectBankBanner'
 import {
   useAccount,
   useAccountStats,
@@ -23,6 +25,16 @@ export function TransactionsPage() {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | undefined>()
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Clear TrueLayer callback params from URL after reading them
+  const bankConnected = searchParams.get('bank_connected') === 'true'
+  const bankError = searchParams.get('bank_error')
+  useEffect(() => {
+    if (bankConnected || bankError) {
+      setSearchParams({}, { replace: true })
+    }
+  }, [])
 
   const { data: account, isLoading: accountLoading } = useAccount()
   const { data: stats } = useAccountStats()
@@ -56,6 +68,18 @@ export function TransactionsPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-y-auto px-8 pb-8">
+        {/* Bank error alert */}
+        {bankError && (
+          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-100">
+            Could not connect your bank — please try again.
+          </div>
+        )}
+
+        {/* TrueLayer connect / status banner */}
+        <div className="pt-6">
+          <ConnectBankBanner />
+        </div>
+
         {/* Account header */}
         <div className="mb-6">
           {accountLoading ? (

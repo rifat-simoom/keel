@@ -66,6 +66,31 @@ class UpdateCategoryRequest(BaseModel):
     category: str
 
 
+# ── TrueLayer connect ─────────────────────────────────────────────────────────
+
+class ConnectUrlResponse(BaseModel):
+    url: str
+    state: str
+
+
+class ExchangeCodeRequest(BaseModel):
+    code: str
+
+
+class BankConnectionStatusResponse(BaseModel):
+    connected: bool
+    provider_name: str | None = None
+    display_name: str | None = None
+    last_synced_at: datetime | None = None
+    status: str | None = None
+    new_transactions: int | None = None
+
+
+class SyncResultResponse(BaseModel):
+    new_transactions: int
+    synced_at: datetime | None
+
+
 # ── Virtual Card ──────────────────────────────────────────────────────────────
 
 class VirtualCardResponse(BaseModel):

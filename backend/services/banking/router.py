@@ -32,12 +32,7 @@ async def _get_or_create_account(db: AsyncSession, user: CurrentUser):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User profile not found — complete onboarding first",
         )
-    account = await repo.get_account_by_company(db, company_id)
-    if not account:
-        account = await repo.create_account(db, company_id)
-        await db.commit()
-        await db.refresh(account)
-    return account
+    return await repo.get_or_create_account(db, company_id)
 
 
 # ── Account ───────────────────────────────────────────────────────────────────
