@@ -149,6 +149,10 @@ services:
       KEYCLOAK_CLIENT_ID: keel-api
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       REDIS_URL: redis://redis:6379/0
+      TRUELAYER_CLIENT_ID: ${TRUELAYER_CLIENT_ID:-}
+      TRUELAYER_CLIENT_SECRET: ${TRUELAYER_CLIENT_SECRET:-}
+      TRUELAYER_REDIRECT_URI: ${TRUELAYER_REDIRECT_URI:-http://localhost:5173/banking/callback}
+      TRUELAYER_SANDBOX: ${TRUELAYER_SANDBOX:-true}
     depends_on:
       postgres:
         condition: service_healthy
