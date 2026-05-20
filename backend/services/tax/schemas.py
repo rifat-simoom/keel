@@ -53,3 +53,7 @@ class PayOptimiserResponse(BaseModel):
     net_income: Decimal
     comparison: SalaryComparisonResponse
     annual_saving: Decimal
+
+
+class DashboardSummaryResponse(BaseModel):
+    tax_estimate: Decimal

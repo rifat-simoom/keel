@@ -18,6 +18,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "http://localhost:5173",
         "https://keelapp.co.uk",
     ],
     allow_credentials=True,
@@ -26,14 +27,17 @@ app.add_middleware(
 )
 
 SERVICE_ROUTES: dict[str, str] = {
-    "/api/v1/auth": "http://auth-service:8001",
-    "/api/v1/invoices": "http://invoice-service:8002",
-    "/api/v1/banking": "http://banking-service:8003",
-    "/api/v1/transactions": "http://banking-service:8003",
-    "/api/v1/tax": "http://tax-service:8004",
-    "/api/v1/documents": "http://document-service:8005",
-    "/api/v1/payroll": "http://payroll-service:8006",
-    "/api/v1/notifications": "http://notification-service:8007",
+    "/api/v1/auth":          "http://auth-service:8001",
+    "/api/v1/accounts":      "http://banking-service:8002",
+    "/api/v1/transactions":  "http://banking-service:8002",
+    "/api/v1/banking":       "http://banking-service:8002",
+    "/api/v1/invoices":      "http://invoice-service:8003",
+    "/api/v1/documents":     "http://documents-service:8004",
+    "/api/v1/tax":           "http://tax-service:8005",
+    "/api/v1/notifications": "http://notifications-service:8006",
+    "/api/v1/deadlines":     "http://notifications-service:8006",
+    "/api/v1/payroll":       "http://notifications-service:8006",  # placeholder until payroll service exists
+    "/api/v1/dashboard":     "http://tax-service:8005",
 }
 
 

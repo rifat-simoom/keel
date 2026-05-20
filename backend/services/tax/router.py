@@ -12,6 +12,7 @@ from .database import get_db
 from . import queries, calculators
 from .schemas import (
     CorpTaxEstimateResponse,
+    DashboardSummaryResponse,
     PayOptimiserResponse,
     SalaryComparisonResponse,
     VATPeriodsResponse,
@@ -19,7 +20,7 @@ from .schemas import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/v1/tax", tags=["tax"])
+router = APIRouter(prefix="/api/v1", tags=["tax"])
 
 
 async def _get_company(db: AsyncSession, user: CurrentUser) -> UUID:
@@ -98,7 +99,29 @@ def _vat_periods(stagger: str, count: int = 4) -> list[tuple[date, date, str]]:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("/corp-tax/estimate", response_model=CorpTaxEstimateResponse)
+@router.get("/dashboard/summary", response_model=DashboardSummaryResponse)
+async def get_dashboard_summary(
+    current_user: CurrentUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+) -> DashboardSummaryResponse:
+    """Lightweight summary for the dashboard — just the running CT estimate."""
+    company_id = await _get_company(db, current_user)
+    settings = await queries.get_company_settings(db, company_id)
+    year_end_month = (settings or {}).get("year_end_month") or 3
+    year_start, year_end, _ = _ct_year_bounds(year_end_month)
+
+    invoices = await queries.get_paid_invoices_for_year(db, company_id, year_start, year_end)
+    expenses = await queries.get_expenses_for_year(db, company_id, year_start, year_end)
+
+    total_income = sum(Decimal(str(i["subtotal"])) for i in invoices)
+    total_expenses = sum(abs(Decimal(str(e["amount"]))) for e in expenses)
+    taxable_profit = max(Decimal("0"), total_income - total_expenses)
+    ct_due = calculators.corp_tax(taxable_profit)
+
+    return DashboardSummaryResponse(tax_estimate=ct_due)
+
+
+@router.get("/tax/corp-tax/estimate", response_model=CorpTaxEstimateResponse)
 async def get_corp_tax_estimate(
     current_user: CurrentUser = Depends(require_auth),
     db: AsyncSession = Depends(get_db),
@@ -139,7 +162,7 @@ async def get_corp_tax_estimate(
     )
 
 
-@router.get("/vat/periods", response_model=VATPeriodsResponse)
+@router.get("/tax/vat/periods", response_model=VATPeriodsResponse)
 async def get_vat_periods(
     count: int = Query(default=4, ge=1, le=8),
     current_user: CurrentUser = Depends(require_auth),
@@ -175,7 +198,7 @@ async def get_vat_periods(
     return VATPeriodsResponse(vat_scheme=vat_scheme, periods=results)
 
 
-@router.get("/salary-optimiser", response_model=PayOptimiserResponse)
+@router.get("/tax/salary-optimiser", response_model=PayOptimiserResponse)
 async def salary_optimiser(
     desired_income: Decimal = Query(..., description="Desired annual gross income in GBP"),
 ) -> PayOptimiserResponse:
