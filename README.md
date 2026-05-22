@@ -8,54 +8,6 @@ Keel replaces the spreadsheet, the invoicing website, the shoebox of receipts, a
 
 ---
 
-## Why I built this
-
-Every personal finance and small business app I looked at had one of three things wrong with it: a paywall, aggressive upsells, or adverts. The free tier gives you just enough to feel the pain of not upgrading. The paid tier costs more than the problem it solves. And most of them are still just a prettier spreadsheet underneath.
-
-I kept thinking — the raw ingredients are all out there, and most of them are free to use as a developer. Banks expose their data through Open Banking APIs. Authentication is a solved problem. Document storage is cheap. Tax rules are public. So why not build the whole thing from scratch with the little knowledge I have, and see how far it goes?
-
-That curiosity is what Keel is. A learning project that became a real product. Built because the problem is real, the tech is accessible, and it is genuinely fascinating once you start pulling on the thread.
-
----
-
-## The B2B2B2B2B problem — and why TrueLayer matters
-
-Here is something that surprised me when I started: almost nothing in fintech is built from scratch. Every layer depends on another business's infrastructure. If you trace the chain behind a simple "view your balance" feature, it looks something like this:
-
-```
-Payment networks (Faster Payments, BACS)
-        ↓
-Retail banks (Barclays, HSBC, Monzo...)
-    — who expose transaction data under PSD2 / Open Banking regulation
-        ↓
-TrueLayer
-    — who aggregate 100+ bank APIs into one clean, normalised API
-        ↓
-Keel
-    — who use TrueLayer to import a user's real transactions
-        ↓
-The freelancer or small business owner
-    — who just wants to see their balance and categorise an expense
-```
-
-That is five layers of B2B relationships before the end user sees a single number. TrueLayer's entire business is being the third link in that chain — they are B2B in the sense that they only sell to developers and businesses, never to consumers directly. But the value they create is ultimately felt by consumers. That makes them B2B2C at minimum, and more accurately B2B2B2C once you account for the fact that Keel itself is a business selling to other businesses (Ltd companies).
-
-This is the standard shape of modern fintech. The banks could not build a great developer API even if they wanted to — it is not their core business. TrueLayer could not build a great end-user product for every possible use case — there are too many niches. So the stack fragments into specialised layers, each doing one thing well, each selling to the layer above.
-
-What makes this interesting from a learning perspective is that TrueLayer offers a full sandbox environment — a mock bank with real OAuth flows, real account and transaction data structures, real token refresh mechanics — entirely free through their developer portal. You can build and test a complete Open Banking integration without touching a real bank account. That kind of generosity from a B2B company toward developers is rare, and it is the reason Keel's banking integration works at all.
-
----
-
-## Is Keel B2B or B2C?
-
-Technically B2B — Keel's users are limited companies and registered businesses, not private individuals. The invoices go out under a company name, the VAT returns belong to the company, the Corporation Tax estimate is a company obligation.
-
-But behaviourally, it is much closer to B2C. A sole-director freelancer making a purchasing decision about a finance tool acts like a consumer: they evaluate it in five minutes, they care about the UI, they do not want a sales call, and they will churn the moment something feels annoying. The sales motion is self-serve, the pricing would be flat-rate subscription, and the competition is consumer apps like Monzo, Tide, and FreeAgent — not enterprise ERP systems.
-
-The honest answer is that Keel sits in the B2SMB (business-to-small-and-medium-business) category, which inherits the worst of both worlds: the compliance complexity of selling to businesses combined with the low willingness-to-pay of consumers. That is probably why most apps in this space either have a paywall or pivot upmarket into accountancy software. Keel is an attempt to stay in that hard middle ground and make it work.
-
----
-
 ## What it does
 
 | Feature | Description |
