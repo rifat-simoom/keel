@@ -1,7 +1,7 @@
 """TrueLayer connect/disconnect endpoints."""
 import secrets
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession

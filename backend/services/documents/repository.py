@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import and_, func, select

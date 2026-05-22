@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine
-from .models import Account, BankConnection, Transaction, VirtualCard
 from shared.models.base import Base
 from .router import router
 from .connect import connect_router

@@ -1,6 +1,4 @@
-import json
 import logging
-from uuid import UUID
 
 import aio_pika
 

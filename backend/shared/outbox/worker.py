@@ -1,11 +1,12 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from shared.events.publisher import EventPublisher
+
 from .models import OutboxEvent
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ class OutboxWorker:
                     await session.execute(
                         update(OutboxEvent)
                         .where(OutboxEvent.id == event.id)
-                        .values(published=True, published_at=datetime.now(timezone.utc))
+                        .values(published=True, published_at=datetime.now(UTC))
                     )
                     logger.debug("Published outbox event %s (%s)", event.id, event.event_type)
                 except Exception:

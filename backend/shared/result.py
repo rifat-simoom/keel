@@ -1,13 +1,13 @@
 from dataclasses import dataclass
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
 
 @dataclass
 class Result(Generic[T]):
-    value: Optional[T] = None
-    error: Optional[str] = None
+    value: T | None = None
+    error: str | None = None
 
     @property
     def is_success(self) -> bool:

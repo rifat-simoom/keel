@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine
-from .models import DeviceToken, Notification
 from shared.models.base import Base
 from .router import router
 from .scanner import run_scanner

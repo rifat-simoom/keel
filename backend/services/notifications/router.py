@@ -11,7 +11,6 @@ from shared.middleware.auth import CurrentUser, require_auth
 from .database import get_db
 from . import repository as repo
 from . import deadlines as dl
-from .models import Notification
 from .schemas import (
     DeadlineResponse,
     NotificationListResponse,

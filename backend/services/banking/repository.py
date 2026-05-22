@@ -6,7 +6,6 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import func, select, and_
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import Account, BankConnection, Transaction, VirtualCard

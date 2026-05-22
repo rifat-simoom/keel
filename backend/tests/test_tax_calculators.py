@@ -1,6 +1,5 @@
 """Unit tests for tax calculation logic — no I/O, pure functions only."""
 from decimal import Decimal
-import pytest
 
 from services.tax.calculators import corp_tax, optimise_pay
 

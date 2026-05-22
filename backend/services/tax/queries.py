@@ -1,6 +1,5 @@
 """DB queries for the tax service — all raw SQL against shared tables."""
-from datetime import date, datetime, timezone
-from decimal import Decimal
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession

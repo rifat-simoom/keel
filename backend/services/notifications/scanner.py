@@ -7,7 +7,7 @@ Background scanner that runs every hour:
 """
 import asyncio
 import logging
-from datetime import date, timedelta, timezone, datetime
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy import text
