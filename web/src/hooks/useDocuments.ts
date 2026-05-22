@@ -15,7 +15,6 @@ export function useDocuments(statusFilter?: string) {
     queryFn: async ({ pageParam = 1 }) => {
       const { data } = await apiClient.get<DocumentListResponse>('/api/v1/documents', {
         params: { page: pageParam, page_size: 20, status: statusFilter || undefined },
-        baseURL: import.meta.env.VITE_DOCUMENTS_API_URL || 'http://localhost:8004',
       })
       return data
     },
@@ -29,9 +28,7 @@ export function useDocument(id: string) {
   return useQuery({
     queryKey: ['documents', id],
     queryFn: async () => {
-      const { data } = await apiClient.get<Document>(`/api/v1/documents/${id}`, {
-        baseURL: import.meta.env.VITE_DOCUMENTS_API_URL || 'http://localhost:8004',
-      })
+      const { data } = await apiClient.get<Document>(`/api/v1/documents/${id}`)
       return data
     },
     enabled: !!id,
@@ -47,7 +44,6 @@ export function useUploadDocument() {
       const form = new FormData()
       form.append('file', file)
       const { data } = await apiClient.post<Document>('/api/v1/documents/upload', form, {
-        baseURL: import.meta.env.VITE_DOCUMENTS_API_URL || 'http://localhost:8004',
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       return data
@@ -62,9 +58,7 @@ export function useUpdateDocument() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body: UpdateDocumentInput }) => {
-      const { data } = await apiClient.put<Document>(`/api/v1/documents/${id}`, body, {
-        baseURL: import.meta.env.VITE_DOCUMENTS_API_URL || 'http://localhost:8004',
-      })
+      const { data } = await apiClient.put<Document>(`/api/v1/documents/${id}`, body)
       return data
     },
     onSuccess: (doc) => {
@@ -81,7 +75,6 @@ export function useMatchDocument() {
       const { data } = await apiClient.post<Document>(
         `/api/v1/documents/${id}/match`,
         { transaction_id: transactionId },
-        { baseURL: import.meta.env.VITE_DOCUMENTS_API_URL || 'http://localhost:8004' },
       )
       return data
     },
@@ -100,7 +93,6 @@ export function useUnmatchDocument() {
       const { data } = await apiClient.post<Document>(
         `/api/v1/documents/${id}/unmatch`,
         {},
-        { baseURL: import.meta.env.VITE_DOCUMENTS_API_URL || 'http://localhost:8004' },
       )
       return data
     },
@@ -115,9 +107,7 @@ export function useDeleteDocument() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      await apiClient.delete(`/api/v1/documents/${id}`, {
-        baseURL: import.meta.env.VITE_DOCUMENTS_API_URL || 'http://localhost:8004',
-      })
+      await apiClient.delete(`/api/v1/documents/${id}`)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['documents', 'list'] })
