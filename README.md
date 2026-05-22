@@ -162,4 +162,4 @@ keel/
 
 ## Licence
 
-Private — all rights reserved.
+MIT — see [LICENSE](LICENSE) for details.
