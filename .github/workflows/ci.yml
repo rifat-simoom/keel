@@ -95,4 +95,4 @@ jobs:
         run: pnpm --filter "@keel/types" --filter "@keel/utils" --filter "@keel/validation" --filter "@keel/api" build
 
       - name: Run web tests
-        run: pnpm --filter "@keel/web" test --run
+        run: pnpm --filter "@keel/web" test -- --run
