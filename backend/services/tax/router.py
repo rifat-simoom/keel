@@ -113,8 +113,8 @@ async def get_dashboard_summary(
     invoices = await queries.get_paid_invoices_for_year(db, company_id, year_start, year_end)
     expenses = await queries.get_expenses_for_year(db, company_id, year_start, year_end)
 
-    total_income = sum(Decimal(str(i["subtotal"])) for i in invoices)
-    total_expenses = sum(abs(Decimal(str(e["amount"]))) for e in expenses)
+    total_income = sum((Decimal(str(i["subtotal"])) for i in invoices), Decimal("0"))
+    total_expenses = sum((abs(Decimal(str(e["amount"]))) for e in expenses), Decimal("0"))
     taxable_profit = max(Decimal("0"), total_income - total_expenses)
     ct_due = calculators.corp_tax(taxable_profit)
 
@@ -136,9 +136,9 @@ async def get_corp_tax_estimate(
     expenses = await queries.get_expenses_for_year(db, company_id, year_start, year_end)
 
     # Income = sum of invoice subtotals (net of VAT)
-    total_income = sum(Decimal(str(i["subtotal"])) for i in invoices)
+    total_income = sum((Decimal(str(i["subtotal"])) for i in invoices), Decimal("0"))
     # Expenses = absolute value of negative transactions flagged as expense
-    total_expenses = sum(abs(Decimal(str(e["amount"]))) for e in expenses)
+    total_expenses = sum((abs(Decimal(str(e["amount"]))) for e in expenses), Decimal("0"))
 
     taxable_profit = max(Decimal("0"), total_income - total_expenses)
     ct_due = calculators.corp_tax(taxable_profit)
@@ -180,8 +180,8 @@ async def get_vat_periods(
         inv = await queries.get_invoices_for_vat_period(db, company_id, p_start, p_end, vat_scheme)
         exp = await queries.get_input_vat_for_period(db, company_id, p_start, p_end)
 
-        output_vat = sum(Decimal(str(i["vat_amount"] or 0)) for i in inv)
-        input_vat = sum(Decimal(str(e["vat_amount"] or 0)) for e in exp)
+        output_vat = sum((Decimal(str(i["vat_amount"] or 0)) for i in inv), Decimal("0"))
+        input_vat = sum((Decimal(str(e["vat_amount"] or 0)) for e in exp), Decimal("0"))
         net_vat = output_vat - input_vat
 
         results.append(VATReturnResponse(

@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Install shared package first (separate layer for caching)
 COPY backend/shared ./shared
-RUN pip install --no-cache-dir ./shared
+RUN pip install --no-cache-dir setuptools && \
+    pip install --no-cache-dir ./shared
 
 # Create package structure mirroring dev layout
 COPY backend/services/__init__.py ./services/__init__.py

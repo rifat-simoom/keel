@@ -3,7 +3,8 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY backend/shared ./shared
-RUN pip install --no-cache-dir ./shared
+RUN pip install --no-cache-dir setuptools && \
+    pip install --no-cache-dir ./shared
 
 COPY backend/services/__init__.py ./services/__init__.py
 COPY backend/services/tax ./services/tax

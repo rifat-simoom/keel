@@ -42,7 +42,7 @@ async def get_paid_invoices_for_year(
               AND deleted_at IS NULL
               AND paid_at::date BETWEEN :start AND :end
         """),
-        {"cid": str(company_id), "start": year_start.isoformat(), "end": year_end.isoformat()},
+        {"cid": str(company_id), "start": year_start, "end": year_end},
     )
     return [dict(r) for r in result.mappings().all()]
 
@@ -62,7 +62,7 @@ async def get_expenses_for_year(
               AND t.deleted_at IS NULL
               AND t.transaction_date BETWEEN :start AND :end
         """),
-        {"cid": str(company_id), "start": year_start.isoformat(), "end": year_end.isoformat()},
+        {"cid": str(company_id), "start": year_start, "end": year_end},
     )
     return [dict(r) for r in result.mappings().all()]
 
@@ -88,7 +88,7 @@ async def get_invoices_for_vat_period(
               AND deleted_at IS NULL
               AND {condition}
         """),
-        {"cid": str(company_id), "start": period_start.isoformat(), "end": period_end.isoformat()},
+        {"cid": str(company_id), "start": period_start, "end": period_end},
     )
     return [dict(r) for r in result.mappings().all()]
 
@@ -107,6 +107,6 @@ async def get_input_vat_for_period(
               AND vat_amount > 0
               AND expense_date BETWEEN :start AND :end
         """),
-        {"cid": str(company_id), "start": period_start.isoformat(), "end": period_end.isoformat()},
+        {"cid": str(company_id), "start": period_start, "end": period_end},
     )
     return [dict(r) for r in result.mappings().all()]
