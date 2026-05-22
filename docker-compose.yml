@@ -90,6 +90,21 @@ services:
 
   # ── Backend services ─────────────────────────────────────────────────────────
 
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/gateway/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - banking-service
+      - invoice-service
+      - documents-service
+      - tax-service
+      - notifications-service
+
   auth-service:
     build:
       context: .
@@ -238,7 +253,7 @@ services:
         VITE_KEYCLOAK_URL: http://localhost:8280
         VITE_KEYCLOAK_REALM: keel
         VITE_KEYCLOAK_CLIENT_ID: keel-web
-        VITE_API_URL: http://localhost:8001
+        VITE_API_URL: http://localhost:8000
     restart: unless-stopped
     ports:
       - "3000:80"
