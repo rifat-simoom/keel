@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  # ── TypeScript packages ─────────────────────────────────────────────────────
+  # ── TypeScript typecheck ────────────────────────────────────────────────────
   ts-check:
     name: TypeScript typecheck
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
       - name: Typecheck all
         run: pnpm typecheck
 
-  # ── Backend Python services ────────────────────────────────────────────────
+  # ── Python lint ─────────────────────────────────────────────────────────────
   python-lint:
     name: Python lint & typecheck
     runs-on: ubuntu-latest
@@ -43,8 +43,9 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install shared package + tools
+      - name: Install tools
         run: |
+          pip install setuptools
           pip install -e backend/shared
           pip install ruff mypy
 
@@ -54,42 +55,10 @@ jobs:
       - name: Mypy
         run: mypy backend/shared --ignore-missing-imports
 
-  # ── Backend tests ──────────────────────────────────────────────────────────
+  # ── Python unit tests ───────────────────────────────────────────────────────
   python-test:
     name: Python tests
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: keel
-          POSTGRES_PASSWORD: keel
-          POSTGRES_DB: keel_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-      rabbitmq:
-        image: rabbitmq:3
-        ports:
-          - 5672:5672
-        options: >-
-          --health-cmd "rabbitmq-diagnostics ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -99,17 +68,15 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pip install setuptools
           pip install -e backend/shared
-          pip install pytest pytest-asyncio
+          pip install pytest
 
       - name: Run tests
-        env:
-          DATABASE_URL: postgresql+asyncpg://keel:keel@localhost:5432/keel_test
-          RABBITMQ_URL: amqp://guest:guest@localhost:5672/
-          REDIS_URL: redis://localhost:6379
-        run: pytest backend/ -v --tb=short
+        working-directory: backend
+        run: pytest -v --tb=short
 
-  # ── Web tests ──────────────────────────────────────────────────────────────
+  # ── Web tests ───────────────────────────────────────────────────────────────
   web-test:
     name: Web tests
     runs-on: ubuntu-latest

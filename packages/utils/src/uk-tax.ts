@@ -36,16 +36,15 @@ export function estimateCorpTax(profit: number): number {
   if (profit >= UK_TAX.CORP_TAX_MAIN_THRESHOLD) {
     return profit * UK_TAX.CORP_TAX_MAIN_RATE
   }
-  // Marginal relief between thresholds
-  const fullRate = profit * UK_TAX.CORP_TAX_MAIN_RATE
-  const relief =
-    ((UK_TAX.CORP_TAX_MAIN_THRESHOLD - profit) /
-      (UK_TAX.CORP_TAX_MAIN_THRESHOLD - UK_TAX.CORP_TAX_SMALL_PROFITS_THRESHOLD)) *
-    (UK_TAX.CORP_TAX_MAIN_RATE - UK_TAX.CORP_TAX_SMALL_RATE) *
-    UK_TAX.CORP_TAX_MAIN_THRESHOLD
-  return fullRate - relief
+  // HMRC marginal relief: main_rate × profit − (3/200) × (upper_limit − profit)
+  const MARGINAL_FRACTION = 3 / 200
+  return (
+    profit * UK_TAX.CORP_TAX_MAIN_RATE -
+    MARGINAL_FRACTION * (UK_TAX.CORP_TAX_MAIN_THRESHOLD - profit)
+  )
 }
 
 export function ukTaxYear(date: Date = new Date()): number {
-  return date.getMonth() >= 3 ? date.getFullYear() : date.getFullYear() - 1
+  const newYearStarted = date.getMonth() > 3 || (date.getMonth() === 3 && date.getDate() >= 6)
+  return newYearStarted ? date.getFullYear() : date.getFullYear() - 1
 }
