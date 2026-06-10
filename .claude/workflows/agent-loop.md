@@ -1,38 +1,72 @@
 # Agent Delivery Loop
 
-> Every session follows this loop exactly. No shortcuts.
-> This document is the canonical reference — CLAUDE.md rules 17–21 point here.
+> Every executor session follows this loop exactly. No shortcuts.
+> CLAUDE.md rules 17–21 point here.
+>
+> **Source of truth: GitHub Issues.** There is no SESSION-INDEX.md.
+> The issue body IS the session brief. No human pause between explore and build.
+
+---
+
+## Issue state machine
+
+```
+pending ──claim──► in-progress ──PR open──► review
+                                               │
+                        ┌──────── human requests changes
+                        │
+                  changes-requested ──reclaim──► in-progress
+                        │
+                        └──────── (or) human closes as won't-fix ──► abandoned
+                                               │
+                                    human merges PR ──► done (issue auto-closed)
+```
+
+Labels that map to each state:
+
+| State | Label |
+|---|---|
+| pending | `status:pending` |
+| in-progress | `status:in-progress` |
+| review | `status:review` |
+| changes-requested | `status:changes-requested` |
+| done | `status:done` (issue closed) |
+| abandoned | `status:abandoned` (issue closed) |
 
 ---
 
 ## The Loop
 
 ```
-START SESSION
+START SESSION (triggered by orchestrator with issue number $N)
      │
      ▼
 ┌─────────────────────────────────────────────────────┐
 │ 1. ORIENT                                           │
-│    • Read SESSION-INDEX.md — confirm which session  │
-│    • Read prior session's handoff note (if exists)  │
-│    • Read session brief + CLAUDE.md + QUICK-REF.md  │
-│    • Load full guardrail files for domains touched  │
-│    • Create branch: feature/phase-{n}-{session-id}  │
+│    • gh issue view $N — read the full body          │
+│    • Body = session brief (context, task,           │
+│      constraints, acceptance criteria)              │
+│    • If "prior handoff" referenced: read that file  │
+│    • Load QUICK-REF.md + every guardrail file in    │
+│      the brief's "Context files to load" section    │
+│    • Create branch from the body's Branch: field    │
+│      git checkout -b $BRANCH origin/main            │
 └─────────────────────────────────────────────────────┘
      │
      ▼
 ┌─────────────────────────────────────────────────────┐
-│ 2. EXPLORE (before writing any code)                │
+│ 2. EXPLORE (no human pause — decide and proceed)    │
 │    • Read existing files in the area you will touch │
 │    • Backend: read models, repo, router in service  │
 │    • Frontend: read components, hooks in feature    │
 │    • Schema: read latest Alembic migration          │
 │    • Identify: base classes, fixtures, naming,      │
 │      import patterns already in use                 │
-│    • Note anything that conflicts with the brief    │
-│    • Tell human what you found + wait for confirm   │
+│    • If explore reveals an impossibility: stop,     │
+│      comment on the issue, escalate to human        │
+│      (do NOT pause for routine findings)            │
 └─────────────────────────────────────────────────────┘
-     │  human confirms
+     │
      ▼
 ┌─────────────────────────────────────────────────────┐
 │ 3. BUILD                                            │
@@ -56,7 +90,9 @@ START SESSION
 │    fix root cause (not symptoms)                    │
 │    run `make verify` again                          │
 │         │                                           │
-│    same error twice? ──yes──► STOP, explain blocker │
+│    same error twice? ──yes──► STOP                  │
+│      gh issue comment $N --body "BLOCKED: ..."      │
+│      escalate to human — do not loop further        │
 │                                                     │
 └─────────────────────────────────────────────────────┘
      │  verify passes
@@ -64,8 +100,8 @@ START SESSION
 ┌─────────────────────────────────────────────────────┐
 │ 5. REGRESSION GATE (all tests)                      │
 │    run `make test` (full suite across all services) │
-│    A failure here = shared code broken by this      │
-│    session — fix before continuing                  │
+│    Failure = shared code broken by this session     │
+│    Fix it before continuing                         │
 └─────────────────────────────────────────────────────┘
      │  regression passes
      ▼
@@ -78,7 +114,7 @@ START SESSION
      ▼
 ┌─────────────────────────────────────────────────────┐
 │ 7. HANDOFF NOTE                                     │
-│    Write .claude/sessions/{phase}/{id}-handoff.md   │
+│    Write .claude/sessions/{milestone}/{id}-handoff  │
 │    using .claude/templates/handoff-template.md      │
 └─────────────────────────────────────────────────────┘
      │
@@ -86,22 +122,26 @@ START SESSION
 ┌─────────────────────────────────────────────────────┐
 │ 8. COMMIT + PR                                      │
 │    git add <specific files only>                    │
-│    git commit -m "feat(phase-n): ..."               │
-│    gh pr create (title + body per Rule 18)          │
+│    git commit -m "feat(gap-{n}): ..."               │
+│    gh pr create — body must contain "Closes #$N"    │
 └─────────────────────────────────────────────────────┘
      │
      ▼
 ┌─────────────────────────────────────────────────────┐
 │ 9. AI CODE REVIEW                                   │
 │    /code-review medium --comment                    │
-│    Fix any finding that matches QUICK-REF.md rules  │
-│    before asking human to review                    │
+│    Fix any BLOCKER finding that violates QUICK-REF  │
+│    before handing to human                          │
 └─────────────────────────────────────────────────────┘
      │
      ▼
 ┌─────────────────────────────────────────────────────┐
-│ 10. MARK INDEX                                      │
-│    SESSION-INDEX.md: [ ] → [x] for this session     │
+│ 10. UPDATE ISSUE                                    │
+│    gh issue edit $N                                 │
+│      --remove-label "status:in-progress"            │
+│      --add-label "status:review"                    │
+│    gh issue comment $N --body "PR: $URL             │
+│      make verify: passing | FIXMEs added: $DELTA"   │
 └─────────────────────────────────────────────────────┘
      │
      ▼
@@ -110,19 +150,45 @@ START SESSION
 
 ---
 
+## Rework path (changes-requested → in-progress)
+
+When a human requests changes on a PR:
+
+```bash
+# Human or orchestrator sets the label:
+gh issue edit $N \
+  --remove-label "status:review" \
+  --add-label "status:changes-requested"
+
+# Executor reclaims:
+gh issue edit $N \
+  --remove-label "status:changes-requested" \
+  --add-label "status:in-progress"
+gh issue comment $N --body "Reclaimed for rework at $(date -u). Addressing review comments."
+
+# Then re-enter the loop at step 3 (BUILD) using the existing branch.
+# Do NOT create a new branch. Push new commits to the same PR.
+# When done, return to step 4 (VERIFY LOOP).
+```
+
+The executor resolves BLOCKER findings from the reviewer before re-requesting review.
+SUGGESTION findings are left as PR comments — human decides whether to act.
+
+---
+
 ## What "done" means
 
 A session is done when **all** of these are true:
 
 | Gate | How to confirm |
-|------|---------------|
+|---|---|
 | `make verify` exits 0 | Session tests pass |
 | `make test` exits 0 | Full regression passes |
 | Handoff note written | File exists at expected path |
-| PR open | `gh pr view` returns a URL |
+| PR open with `Closes #N` | `gh pr view` returns a URL |
 | AI review run | `/code-review --comment` findings visible on PR |
 | Guardrail violations fixed | No QUICK-REF rule broken in the diff |
-| SESSION-INDEX.md updated | `[x]` beside this session |
+| Issue labelled `status:review` | Confirmed via `gh issue view $N` |
 
 ---
 
@@ -132,8 +198,8 @@ A session is done when **all** of these are true:
 |---|---|
 | `CLAUDE.md` | `python-practices.md` — backend sessions |
 | `QUICK-REF.md` | `frontend-practices.md` — web/mobile sessions |
-| Session brief | `owasp-top10.md` — auth, money, file uploads, events |
-| Prior handoff | `financial-rules.md` — VAT, CT, payroll calculations |
+| Session brief (issue body) | `owasp-top10.md` — auth, money, file uploads, events |
+| Prior handoff (if referenced) | `financial-rules.md` — VAT, CT, payroll calculations |
 | | `forbidden-patterns.md` — when writing financial mutations |
 
 ---
@@ -142,21 +208,11 @@ A session is done when **all** of these are true:
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| `make verify` fails after two fixes | Wrong root cause diagnosed | Stop, explain to human |
+| `make verify` fails after two fixes | Wrong root cause diagnosed | Stop, comment on issue, escalate |
 | `make test` fails but `make verify` passes | Shared model/package broken | Check what the session changed in shared code |
 | Migration won't apply | Schema conflict with prior session | Never edit applied migrations; add a new one |
 | Import errors in tests | Shared package not rebuilt | `pnpm --filter @keel/types build` first |
 | Type errors in web/mobile | Generated types out of date | Rebuild `@keel/types`, re-run verify |
 | Agent repeats a pattern already in the codebase differently | Explore step skipped | Read existing files before building |
 | FIXME count jumped by 10+ | Scope crept | Review changes; revert out-of-scope edits |
-
----
-
-## Parallel sessions (future)
-
-Sessions within a phase that touch different services can run in parallel if:
-1. They have no shared file writes
-2. They each have their own branch
-3. Their PRs are merged in schema-first order
-
-Never run parallel sessions that both modify the same migration or the same shared package.
+| Issue stuck at `status:in-progress` for > 2h | Session interrupted | Human resets: remove `status:in-progress`, add `status:pending` |
