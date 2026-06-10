@@ -143,7 +143,26 @@ async def list_transactions(
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    return result.scalars().all(), total
+    return list(result.scalars().all()), total
+
+
+async def get_transactions_for_export(
+    db: AsyncSession,
+    account_id: UUID,
+    date_from: date,
+    date_to: date,
+) -> list[Transaction]:
+    result = await db.execute(
+        select(Transaction)
+        .where(
+            Transaction.account_id == account_id,
+            Transaction.deleted_at.is_(None),
+            Transaction.transaction_date >= date_from,
+            Transaction.transaction_date <= date_to,
+        )
+        .order_by(Transaction.transaction_date.desc(), Transaction.created_at.desc())
+    )
+    return list(result.scalars().all())
 
 
 async def get_transaction(

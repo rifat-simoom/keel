@@ -79,7 +79,7 @@ async def mark_read(db: AsyncSession, notification_id: UUID, company_id: UUID) -
         )
         .values(is_read=True)
     )
-    return result.rowcount > 0
+    return result.rowcount > 0  # type: ignore[attr-defined]
 
 
 async def mark_all_read(db: AsyncSession, company_id: UUID) -> int:
@@ -88,7 +88,7 @@ async def mark_all_read(db: AsyncSession, company_id: UUID) -> int:
         .where(Notification.company_id == company_id, Notification.is_read.is_(False))
         .values(is_read=True)
     )
-    return result.rowcount
+    return result.rowcount  # type: ignore[attr-defined]
 
 
 async def upsert_device_token(

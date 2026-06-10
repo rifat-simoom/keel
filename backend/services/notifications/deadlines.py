@@ -28,7 +28,7 @@ def vat_deadlines(stagger: str, today: date | None = None) -> list[dict]:
     end_months = {"A": [1, 4, 7, 10], "B": [2, 5, 8, 11], "C": [3, 6, 9, 12]}.get(
         stagger.upper(), [3, 6, 9, 12]
     )
-    deadlines = []
+    deadlines: list[dict] = []
     year = today.year - 1
 
     while len(deadlines) < 4:
@@ -56,7 +56,7 @@ def vat_deadlines(stagger: str, today: date | None = None) -> list[dict]:
                 break
         year += 1
 
-    return sorted(deadlines, key=lambda d: d["due_date"])[:4]
+    return sorted(deadlines, key=lambda d: d["due_date"])[:4]  # type: ignore[arg-type]
 
 
 def corp_tax_deadlines(year_end_month: int, today: date | None = None) -> list[dict]:
@@ -127,4 +127,4 @@ def invoice_deadlines(invoices: list[dict], today: date | None = None) -> list[d
                 "route": f"/invoices/{inv['id']}",
                 "urgency": _urgency(days),
             })
-    return sorted(results, key=lambda d: d["due_date"])[:10]
+    return sorted(results, key=lambda d: d["due_date"])[:10]  # type: ignore[arg-type,return-value]
