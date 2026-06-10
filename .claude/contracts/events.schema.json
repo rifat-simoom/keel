@@ -1,0 +1,235 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "Canonical RabbitMQ event catalogue. Every producer and consumer must reference this file. Never publish an event_type not listed here — add it here first in a separate commit.",
+
+  "envelope": {
+    "description": "Every event published to RabbitMQ must match this envelope shape.",
+    "type": "object",
+    "required": ["event_type", "company_id", "payload", "published_at", "idempotency_key"],
+    "properties": {
+      "event_type":       { "type": "string", "description": "Must match a key in the 'events' map below" },
+      "company_id":       { "type": "string", "format": "uuid" },
+      "payload":          { "type": "object", "description": "Shape defined per event_type below" },
+      "published_at":     { "type": "string", "format": "date-time" },
+      "idempotency_key":  { "type": "string", "minLength": 1 }
+    }
+  },
+
+  "events": {
+
+    "invoice.created": {
+      "publisher": "invoice-service",
+      "consumers": ["notification-service"],
+      "phase": 4,
+      "payload_schema": {
+        "type": "object",
+        "required": ["invoice_id", "invoice_number", "client_name", "amount_total", "currency"],
+        "properties": {
+          "invoice_id":     { "type": "string", "format": "uuid" },
+          "invoice_number": { "type": "string", "pattern": "^INV-\\d{4}-\\d{3,}$" },
+          "client_name":    { "type": "string" },
+          "amount_total":   { "type": "string", "description": "Decimal string, e.g. '1200.00'" },
+          "currency":       { "type": "string", "const": "GBP" }
+        }
+      }
+    },
+
+    "invoice.sent": {
+      "publisher": "invoice-service",
+      "consumers": ["notification-service"],
+      "phase": 4,
+      "payload_schema": {
+        "type": "object",
+        "required": ["invoice_id", "invoice_number", "client_email", "amount_total"],
+        "properties": {
+          "invoice_id":     { "type": "string", "format": "uuid" },
+          "invoice_number": { "type": "string" },
+          "client_email":   { "type": "string", "format": "email" },
+          "amount_total":   { "type": "string" }
+        }
+      }
+    },
+
+    "invoice.viewed": {
+      "publisher": "invoice-service",
+      "consumers": ["notification-service"],
+      "phase": 4,
+      "payload_schema": {
+        "type": "object",
+        "required": ["invoice_id", "invoice_number", "viewed_at"],
+        "properties": {
+          "invoice_id":     { "type": "string", "format": "uuid" },
+          "invoice_number": { "type": "string" },
+          "viewed_at":      { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+
+    "invoice.paid": {
+      "publisher": "invoice-service",
+      "consumers": ["banking-service", "tax-service"],
+      "phase": 4,
+      "payload_schema": {
+        "type": "object",
+        "required": ["invoice_id", "invoice_number", "amount_total", "paid_at"],
+        "properties": {
+          "invoice_id":     { "type": "string", "format": "uuid" },
+          "invoice_number": { "type": "string" },
+          "amount_total":   { "type": "string" },
+          "vat_amount":     { "type": "string", "description": "VAT component, decimal string" },
+          "paid_at":        { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+
+    "invoice.overdue": {
+      "publisher": "invoice-service",
+      "consumers": ["notification-service"],
+      "phase": 4,
+      "payload_schema": {
+        "type": "object",
+        "required": ["invoice_id", "invoice_number", "client_name", "amount_total", "due_date", "days_overdue"],
+        "properties": {
+          "invoice_id":   { "type": "string", "format": "uuid" },
+          "invoice_number": { "type": "string" },
+          "client_name":  { "type": "string" },
+          "amount_total": { "type": "string" },
+          "due_date":     { "type": "string", "format": "date" },
+          "days_overdue": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+
+    "transaction.created": {
+      "publisher": "banking-service",
+      "consumers": ["notification-service"],
+      "phase": 3,
+      "payload_schema": {
+        "type": "object",
+        "required": ["transaction_id", "amount", "direction", "description", "created_at"],
+        "properties": {
+          "transaction_id": { "type": "string", "format": "uuid" },
+          "amount":         { "type": "string", "description": "Absolute decimal string, always positive" },
+          "direction":      { "type": "string", "enum": ["credit", "debit"] },
+          "description":    { "type": "string" },
+          "category":       { "type": "string", "description": "HMRC category or null if uncategorised" },
+          "created_at":     { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+
+    "transaction.categorised": {
+      "publisher": "banking-service",
+      "consumers": ["tax-service"],
+      "phase": 9,
+      "notes": "Phase 9 only — AI auto-categorisation result",
+      "payload_schema": {
+        "type": "object",
+        "required": ["transaction_id", "category", "confidence"],
+        "properties": {
+          "transaction_id": { "type": "string", "format": "uuid" },
+          "category":       { "type": "string" },
+          "confidence":     { "type": "number", "minimum": 0, "maximum": 1 },
+          "previous_category": { "type": ["string", "null"] }
+        }
+      }
+    },
+
+    "document.uploaded": {
+      "publisher": "document-service",
+      "consumers": ["notification-service"],
+      "phase": 5,
+      "payload_schema": {
+        "type": "object",
+        "required": ["document_id", "filename", "mime_type", "uploaded_at"],
+        "properties": {
+          "document_id":  { "type": "string", "format": "uuid" },
+          "filename":     { "type": "string" },
+          "mime_type":    { "type": "string" },
+          "uploaded_at":  { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+
+    "document.parsed": {
+      "publisher": "document-service",
+      "consumers": ["document-service"],
+      "phase": 9,
+      "notes": "Phase 9 only — AI OCR extraction complete",
+      "payload_schema": {
+        "type": "object",
+        "required": ["document_id", "extracted_amount", "extracted_date", "extracted_vendor"],
+        "properties": {
+          "document_id":        { "type": "string", "format": "uuid" },
+          "extracted_amount":   { "type": ["string", "null"] },
+          "extracted_date":     { "type": ["string", "null"], "format": "date" },
+          "extracted_vendor":   { "type": ["string", "null"] },
+          "extraction_confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+
+    "document.matched": {
+      "publisher": "document-service",
+      "consumers": ["notification-service"],
+      "phase": 5,
+      "payload_schema": {
+        "type": "object",
+        "required": ["document_id", "transaction_id"],
+        "properties": {
+          "document_id":    { "type": "string", "format": "uuid" },
+          "transaction_id": { "type": "string", "format": "uuid" }
+        }
+      }
+    },
+
+    "document.attention_required": {
+      "publisher": "document-service",
+      "consumers": ["notification-service"],
+      "phase": 5,
+      "payload_schema": {
+        "type": "object",
+        "required": ["document_id", "reason"],
+        "properties": {
+          "document_id": { "type": "string", "format": "uuid" },
+          "reason":      { "type": "string", "enum": ["no_receipt", "amount_mismatch", "unmatched_expense", "other_category"] }
+        }
+      }
+    },
+
+    "payroll.run": {
+      "publisher": "payroll-service",
+      "consumers": ["banking-service", "notification-service"],
+      "phase": 8,
+      "payload_schema": {
+        "type": "object",
+        "required": ["payroll_run_id", "tax_period", "total_net_pay", "total_employer_ni", "employee_count"],
+        "properties": {
+          "payroll_run_id":    { "type": "string", "format": "uuid" },
+          "tax_period":        { "type": "string", "description": "e.g. '2025-04' (YYYY-MM)" },
+          "total_net_pay":     { "type": "string" },
+          "total_employer_ni": { "type": "string" },
+          "employee_count":    { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+
+    "tax.deadline_approaching": {
+      "publisher": "tax-service",
+      "consumers": ["notification-service", "calendar-service"],
+      "phase": 7,
+      "payload_schema": {
+        "type": "object",
+        "required": ["deadline_type", "due_date", "days_until_due"],
+        "properties": {
+          "deadline_type":  { "type": "string", "enum": ["vat_return", "ct_filing", "paye_payment", "self_assessment"] },
+          "due_date":       { "type": "string", "format": "date" },
+          "days_until_due": { "type": "integer", "minimum": 0 },
+          "amount_due":     { "type": ["string", "null"], "description": "Estimated amount if known" },
+          "period_end":     { "type": ["string", "null"], "format": "date" }
+        }
+      }
+    }
+
+  }
+}

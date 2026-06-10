@@ -4,8 +4,20 @@
 > Each session is one layer of one concern, completable in a single Claude Code session,
 > verifiable with `make verify`.
 >
-> Load `CLAUDE.md`, `.claude/guardrails/financial-rules.md`, and `.claude/guardrails/forbidden-patterns.md`
-> at the start of **every** session — they apply universally.
+> **Always load** (every session):
+> - `CLAUDE.md`
+> - `.claude/guardrails/QUICK-REF.md`
+> - `.claude/workflows/agent-loop.md`
+>
+> **Load on demand** (only when the session touches that domain):
+> - `.claude/guardrails/python-practices.md` — backend sessions
+> - `.claude/guardrails/frontend-practices.md` — web / mobile sessions
+> - `.claude/guardrails/owasp-top10.md` — auth, money, file uploads, events
+> - `.claude/guardrails/financial-rules.md` — VAT, CT, payroll calculations
+> - `.claude/guardrails/forbidden-patterns.md` — financial mutations
+>
+> This two-tier loading keeps context windows lean. QUICK-REF covers the rules most
+> likely to be violated. Pull the full file only when you need the detailed examples.
 
 ---
 

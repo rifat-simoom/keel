@@ -177,3 +177,71 @@
 - See `.claude/guardrails/forbidden-patterns.md` for banned code patterns
 - When in doubt: follow UK GAAP + HMRC rules, not convenience
 - Every financial calculation must link to the rule it implements (inline comment with rule source)
+
+---
+
+## 16b. Guardrail loading strategy
+
+Load `.claude/guardrails/QUICK-REF.md` **every session** — it covers the rules most likely to be silently violated.
+
+Load the full guardrail file only when the session touches that domain:
+
+| Full guardrail file | Load when |
+|---|---|
+| `python-practices.md` | Writing backend Python code |
+| `frontend-practices.md` | Writing web or mobile code |
+| `owasp-top10.md` | Writing auth, money handling, file uploads, or events |
+| `financial-rules.md` | Writing VAT, CT, or payroll calculations |
+| `forbidden-patterns.md` | Writing any financial mutation (invoice, transaction, payroll) |
+
+Any code matching a forbidden pattern in these files makes the session **invalid**.
+
+---
+
+## 17. Agent Iteration Loop — Mandatory
+
+- After writing code, always run `make verify` before declaring a session done
+- If `make verify` fails: read the full error output, fix the root cause, run again
+- If the same error appears twice in a row: stop, explain the blocker, do not loop further
+- Never mark a session done if `make verify` is not passing
+- See `.claude/workflows/agent-loop.md` for the full delivery loop
+
+---
+
+## 18. PR-Per-Session — Mandatory
+
+- Every session works on its own branch: `feature/phase-{n}-{session-id}` (e.g. `feature/phase-8-s8.1-db-schema`)
+- When `make verify` passes, open a PR — never push directly to `main`
+- PR title format: `feat(phase-{n}): {session title}` (e.g. `feat(phase-8): DB schema — employees, payroll_runs, payslips`)
+- PR body must include: what was built, which SPEC section it implements, and the `make verify` command that passes
+- A session is not done until the PR exists — human review and merge is the final gate
+- Run `/done-session` to automate this checklist
+
+---
+
+## 19. Session Handoff Notes — Mandatory
+
+- At the end of every session, write `.claude/sessions/{phase}/{session-id}-handoff.md` using the template at `.claude/templates/handoff-template.md`
+- The next session agent MUST read the prior session's handoff before writing any code
+- Handoff captures: what was built, non-obvious decisions made, known issues, what the next session needs to be aware of
+- Never skip the handoff even if the session felt straightforward — the next agent starts cold
+
+---
+
+## 20. FIXME Tracking — Mandatory
+
+- Every `# FIXME:` comment must include the session ID that added it: `# FIXME(s8.1): description`
+- Before opening a PR, run: `grep -rn "# FIXME" --include="*.py" --include="*.ts" --include="*.tsx" . | wc -l`
+- Include the FIXME count in the PR body so it is visible in review
+- If FIXME count grows by more than 5 in a single session, flag it as a risk in the PR description
+- FIXMEs are never resolved within the session that found them — they go on the backlog
+
+---
+
+## 21. Event Catalogue Contract — Mandatory
+
+- All RabbitMQ events must exist in `.claude/contracts/events.schema.json` before a producer or consumer is written
+- Never publish an event type not in the catalogue — add it to the catalogue first (separate commit)
+- Producer payload must match the `payload_schema` defined in the catalogue
+- Consumer must validate incoming payload against the same schema before processing
+- See `.claude/contracts/events.schema.json` for all valid event types
