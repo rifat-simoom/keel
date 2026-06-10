@@ -35,7 +35,7 @@ def _tax_year_bounds(year: int) -> tuple[date, date]:
     return date(year - 1, 4, 6), date(year, 4, 5)
 
 
-def _ct_year_bounds(year_end_month: int) -> tuple[date, int]:
+def _ct_year_bounds(year_end_month: int) -> tuple[date, date, int]:
     """Company tax year ending in month year_end_month of the current year."""
     today = date.today()
     year_end = date(today.year, year_end_month, 1)
@@ -65,7 +65,7 @@ def _vat_periods(stagger: str, count: int = 4) -> list[tuple[date, date, str]]:
     }
     end_months = stagger_end_months.get(stagger.upper(), [3, 6, 9, 12])
     today = date.today()
-    periods = []
+    periods: list[tuple[date, date, str]] = []
 
     # Work backwards from today to find completed quarters
     for _ in range(count * 4):  # scan enough months

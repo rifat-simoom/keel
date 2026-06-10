@@ -144,7 +144,7 @@ async def list_invoices(
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    return result.scalars().all(), count
+    return list(result.scalars().all()), count
 
 
 async def update_invoice(

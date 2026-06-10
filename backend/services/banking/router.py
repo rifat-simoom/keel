@@ -1,8 +1,11 @@
+import csv
+import io
 import logging
 from datetime import date
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.middleware.auth import CurrentUser, require_auth
@@ -58,6 +61,45 @@ async def get_account_stats(
 
 
 # ── Transactions ──────────────────────────────────────────────────────────────
+
+@router.get("/transactions/export")
+async def export_transactions(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    current_user: CurrentUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    if date_from > date_to:
+        raise HTTPException(
+            status_code=422,
+            detail="date_from must not be after date_to",
+        )
+    account = await _get_or_create_account(db, current_user)
+    txns = await repo.get_transactions_for_export(db, account.id, date_from, date_to)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Date", "Description", "Merchant", "Amount (£)", "Direction", "Category", "Receipt Attached"])
+    for txn in txns:
+        writer.writerow([
+            txn.transaction_date.isoformat(),
+            txn.description,
+            txn.merchant_name or "",
+            # Decimal from DB — format to string, never cast to float (QUICK-REF money rule)
+            f"{abs(txn.amount):.2f}",
+            "credit" if txn.amount >= 0 else "debit",
+            txn.category or "",
+            "yes" if txn.receipt_id is not None else "no",
+        ])
+
+    output.seek(0)
+    filename = f"transactions-{date_from}-{date_to}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
 
 @router.get("/transactions", response_model=TransactionListResponse)
 async def list_transactions(
