@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(xargs cat)",
+      "Bash(xargs ls)",
+      "Bash(node_modules/.bin/pnpm --filter \"@keel/types\" build)",
+      "Bash(pnpm --filter \"@keel/types\" build)",
+      "Bash(pnpm --filter \"@keel/web\" typecheck)",
+      "Bash(docker build *)",
+      "Bash(docker rmi *)",
+      "Bash(pnpm --filter @keel/types tsc --noEmit)",
+      "Bash(pnpm --filter web tsc --noEmit)",
+      "Bash(npx tsc *)",
+      "Bash(pnpm --filter @keel/types build)",
+      "WebSearch",
+      "WebFetch(domain:support.truelayer.com)",
+      "WebFetch(domain:docs.truelayer.com)",
+      "WebFetch(domain:docs.lithic.com)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git branch *)",
+      "Bash(git commit -m ' *)",
+      "Bash(sudo lsof -i:8000)",
+      "Bash(sudo ss -tlnp)",
+      "Bash(git remote *)",
+      "Bash(git commit *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\); print\\('---'\\); print\\(json.dumps\\({k:v for k,v in d.get\\('devDependencies',{}\\).items\\(\\) if 'test' in k or 'vitest' in k or 'jest' in k}, indent=2\\)\\)\")",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(d.get\\('scripts',{}\\)\\)\")",
+      "Bash(pip install *)",
+      "Bash(pytest -v --tb=short)",
+      "Bash(pnpm --filter \"@keel/utils\" --filter \"@keel/types\" build -q)",
+      "Bash(pnpm --filter \"@keel/web\" test --run)",
+      "Bash(pnpm --filter \"@keel/types\" --filter \"@keel/utils\" build)",
+      "Bash(pnpm --filter \"@keel/web\" exec vitest run)",
+      "Bash(pnpm --filter \"@keel/utils\" build)",
+      "Bash(ruff check *)",
+      "Bash(git -C /var/www/html/repos/keel status)",
+      "Bash(git -C /var/www/html/repos/keel add .github/workflows/ci.yml backend/shared/pyproject.toml backend/services/auth/schemas.py backend/services/banking/connect.py backend/services/banking/main.py backend/services/banking/repository.py backend/services/documents/main.py backend/services/documents/repository.py backend/services/invoice/main.py backend/services/invoice/models.py backend/services/invoice/repository.py backend/services/invoice/schemas.py backend/services/notifications/main.py backend/services/notifications/repository.py backend/services/notifications/router.py backend/services/notifications/scanner.py backend/services/tax/queries.py backend/shared/events/publisher.py backend/shared/models/base.py backend/shared/outbox/models.py backend/shared/outbox/worker.py backend/shared/result.py backend/tests/test_tax_calculators.py)",
+      "Bash(git -C /var/www/html/repos/keel commit -m ' *)",
+      "Bash(git -C /var/www/html/repos/keel push origin main)",
+      "Bash(git -C /var/www/html/repos/keel add mobile/tsconfig.json .github/workflows/ci.yml)"
+    ],
+    "additionalDirectories": [
+      "/var/www/html/repos/anna"
+    ]
+  }
+}
